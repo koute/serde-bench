@@ -11,7 +11,7 @@ use {
         Serialize,
         Deserialize
     },
-    speedy_derive::{
+    speedy::{
         Writable,
         Readable
     }
@@ -262,7 +262,9 @@ macro_rules! speedy_benches {
             let value = default_value();
             b.iter( || {
                 let mut buffer = empty_vec();
-                value.write_to_stream( $endianness, &mut buffer ).unwrap();
+                value
+                    .write_to_stream_with_ctx($endianness, &mut buffer)
+                    .unwrap();
                 buffer
             });
         }
@@ -273,10 +275,13 @@ macro_rules! speedy_benches {
 
             let value = default_value();
             let mut buffer = empty_vec();
-            value.write_to_stream( $endianness, &mut buffer ).unwrap();
+            value
+                .write_to_stream_with_ctx($endianness, &mut buffer)
+                .unwrap();
 
-            b.iter( || {
-                let deserialized: Foo = Readable::read_from_buffer( $endianness, &buffer ).unwrap();
+            b.iter(|| {
+                let deserialized: Foo =
+                    Readable::read_from_buffer_with_ctx($endianness, &buffer).unwrap();
                 deserialized
             });
         }
