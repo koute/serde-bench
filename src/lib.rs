@@ -262,7 +262,7 @@ macro_rules! speedy_benches {
             let value = default_value();
             b.iter( || {
                 let mut buffer = empty_vec();
-                value.write_to_stream( $endianness, &mut buffer ).unwrap();
+                value.write_to_stream_with_ctx( $endianness, &mut buffer ).unwrap();
                 buffer
             });
         }
@@ -273,10 +273,10 @@ macro_rules! speedy_benches {
 
             let value = default_value();
             let mut buffer = empty_vec();
-            value.write_to_stream( $endianness, &mut buffer ).unwrap();
+            value.write_to_stream_with_ctx( $endianness, &mut buffer ).unwrap();
 
             b.iter( || {
-                let deserialized: Foo = Readable::read_from_buffer( $endianness, &buffer ).unwrap();
+                let deserialized: Foo = Readable::read_from_buffer_with_ctx( $endianness, &buffer ).unwrap();
                 deserialized
             });
         }
@@ -321,6 +321,30 @@ fn deserialize_serde_bincode( b: &mut Bencher ) {
 }
 
 #[bench]
+fn deserialize_serde_cbor( b: &mut Bencher ) {
+    let value = default_value();
+    let mut buffer = Vec::new();
+    serde_cbor::to_writer(&mut buffer, &value).unwrap();
+
+    b.iter( || {
+        let deserialized: Foo = serde_cbor::de::from_slice(&buffer).unwrap();
+        deserialized
+    });
+}
+
+#[bench]
+fn deserialize_serde_ciborium( b: &mut Bencher ) {
+    let value = default_value();
+    let mut buffer = Vec::new();
+    ciborium::ser::into_writer(&value, &mut buffer).unwrap();
+
+    b.iter( || {
+        let deserialized: Foo = ciborium::de::from_reader(std::io::Cursor::new(&buffer)).unwrap();
+        deserialized
+    });
+}
+
+#[bench]
 fn serialize_serde_json( b: &mut Bencher ) {
     let value = default_value();
 
@@ -360,6 +384,17 @@ fn serialize_serde_cbor( b: &mut Bencher ) {
     b.iter( || {
         let mut buffer = empty_vec();
         serde_cbor::ser::to_writer( &mut buffer, &value ).unwrap();
+        buffer
+    });
+}
+
+#[bench]
+fn serialize_serde_ciborium( b: &mut Bencher ) {
+    let value = default_value();
+
+    b.iter( || {
+        let mut buffer = empty_vec();
+        ciborium::ser::into_writer(&value, &mut buffer).unwrap();
         buffer
     });
 }
